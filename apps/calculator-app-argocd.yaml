@@ -1,0 +1,67 @@
+# =============================================================================
+# ArgoCD Application — calculator-app
+# =============================================================================
+#
+# This Application CR is a template for deploying a second application through
+# ArgoCD. Students should configure it to point to their own calculator-app
+# repository and manifests.
+#
+# How to use:
+#   1. Update the repoURL to your calculator-app Git repository
+#   2. Set the path to the directory containing your Kubernetes manifests
+#   3. Apply with: kubectl apply -f apps/calculator-app-argocd.yaml
+# =============================================================================
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # The name that will appear in the ArgoCD dashboard
+  name: calculator-app
+  # ArgoCD Applications must be created in the argocd namespace
+  namespace: argocd
+spec:
+  # ArgoCD project — "default" grants access to any cluster/namespace
+  project: default
+
+  # ---------------------------------------------------------------------------
+  # Source — the Git repository and path containing your manifests
+  # ---------------------------------------------------------------------------
+  source:
+    # TODO: Replace with the URL of your calculator-app repository
+    # Example: https://github.com/<your-username>/calculator-app.git
+    repoURL: https://github.com/<your-username>/calculator-app.git
+
+    # The Git branch, tag, or commit SHA to track
+    targetRevision: main
+
+    # The directory inside the repo that holds the Kubernetes manifests
+    # TODO: Update this path to match your repository structure
+    # Example: "k8s", "manifests", or "." if manifests are at the root
+    path: k8s
+
+  # ---------------------------------------------------------------------------
+  # Destination — the target cluster and namespace for deployment
+  # ---------------------------------------------------------------------------
+  destination:
+    # The in-cluster API server (use this when ArgoCD runs on the same cluster)
+    server: https://kubernetes.default.svc
+
+    # The Kubernetes namespace where the app will be deployed
+    namespace: calculator-app-ns
+
+  # ---------------------------------------------------------------------------
+  # Sync Policy — controls how ArgoCD reconciles Git state with the cluster
+  # ---------------------------------------------------------------------------
+  syncPolicy:
+    automated:
+      # prune: when a manifest is removed from Git, delete the corresponding
+      # resource from the cluster
+      prune: true
+
+      # selfHeal: if someone manually edits a resource in the cluster,
+      # ArgoCD will revert it to match the Git-defined state
+      selfHeal: true
+
+    syncOptions:
+      # Automatically create the target namespace if it does not exist
+      - CreateNamespace=true

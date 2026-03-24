@@ -1,0 +1,31 @@
+# =============================================================================
+# ArgoCD Helm Chart — Custom Values for Lab Environment
+# =============================================================================
+#
+# These values override the defaults from the argo/argo-cd Helm chart.
+# For the full list of configurable values, see:
+#   https://github.com/argoproj/argo-helm/tree/main/charts/argo-cd
+#
+# NOTE: These settings are designed for a training lab, NOT for production.
+# In production you would enable TLS, use an Ingress controller, configure
+# SSO, and restrict access with RBAC policies.
+# =============================================================================
+
+server:
+  # ---------------------------------------------------------------------------
+  # Service type: LoadBalancer
+  #
+  # Exposes the ArgoCD UI on an AWS Network Load Balancer so students can
+  # access it directly from their browser without port-forwarding.
+  # ---------------------------------------------------------------------------
+  service:
+    type: LoadBalancer
+
+  # ---------------------------------------------------------------------------
+  # Insecure mode: true
+  #
+  # Disables the built-in TLS termination on the ArgoCD server. This keeps
+  # the lab simple — students connect over plain HTTP. In production, you
+  # would terminate TLS at an Ingress or load balancer instead.
+  # ---------------------------------------------------------------------------
+  insecure: true

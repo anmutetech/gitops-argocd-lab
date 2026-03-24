@@ -1,0 +1,57 @@
+# =============================================================================
+# ArgoCD Application — sample-app
+# =============================================================================
+#
+# This custom resource tells ArgoCD to watch a Git repository and
+# automatically deploy the Kubernetes manifests found at the specified path.
+#
+# After creating this resource, ArgoCD will:
+#   1. Clone the repository
+#   2. Read the manifests under the "sample-app" directory
+#   3. Apply them to the target cluster and namespace
+#   4. Continuously sync any future changes (auto-sync is enabled)
+# =============================================================================
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # The name that appears in the ArgoCD UI
+  name: sample-app
+  # ArgoCD Applications must live in the argocd namespace
+  namespace: argocd
+spec:
+  # The ArgoCD project this app belongs to. "default" is the built-in project.
+  project: default
+
+  # ---------------------------------------------------------------------------
+  # Source — where ArgoCD fetches the manifests
+  # ---------------------------------------------------------------------------
+  source:
+    # IMPORTANT: Replace <your-username> with your GitHub username
+    repoURL: https://github.com/<your-username>/gitops-argocd-lab.git
+    # The branch to track
+    targetRevision: main
+    # The directory inside the repo that contains the Kubernetes manifests
+    path: sample-app
+
+  # ---------------------------------------------------------------------------
+  # Destination — where ArgoCD deploys the manifests
+  # ---------------------------------------------------------------------------
+  destination:
+    # The Kubernetes API server (in-cluster)
+    server: https://kubernetes.default.svc
+    # The namespace to deploy into
+    namespace: sample-app-ns
+
+  # ---------------------------------------------------------------------------
+  # Sync Policy — how ArgoCD keeps the cluster in sync with Git
+  # ---------------------------------------------------------------------------
+  syncPolicy:
+    automated:
+      # prune: delete resources that are no longer defined in Git
+      prune: true
+      # selfHeal: revert manual changes made directly to the cluster
+      selfHeal: true
+    syncOptions:
+      # Automatically create the target namespace if it does not exist
+      - CreateNamespace=true
