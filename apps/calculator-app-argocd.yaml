@@ -1,13 +1,16 @@
 # =============================================================================
-# ArgoCD Application — calculator-app
+# ArgoCD Application — Second App (Template)
 # =============================================================================
 #
 # This Application CR is a template for deploying a second application through
-# ArgoCD. Students should configure it to point to their own calculator-app
-# repository and manifests.
+# ArgoCD. Students should configure it to point to another application
+# repository — for example, the calculator-app or any other project.
+#
+# This demonstrates managing multiple applications through GitOps, which is
+# how real companies operate: one ArgoCD instance managing dozens of services.
 #
 # How to use:
-#   1. Update the repoURL to your calculator-app Git repository
+#   1. Update the repoURL to your other application's Git repository
 #   2. Set the path to the directory containing your Kubernetes manifests
 #   3. Apply with: kubectl apply -f apps/calculator-app-argocd.yaml
 # =============================================================================
@@ -16,7 +19,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   # The name that will appear in the ArgoCD dashboard
-  name: calculator-app
+  name: second-app
   # ArgoCD Applications must be created in the argocd namespace
   namespace: argocd
 spec:
@@ -27,7 +30,7 @@ spec:
   # Source — the Git repository and path containing your manifests
   # ---------------------------------------------------------------------------
   source:
-    # TODO: Replace with the URL of your calculator-app repository
+    # TODO: Replace with the URL of your second application's repository
     # Example: https://github.com/<your-username>/calculator-app.git
     repoURL: https://github.com/<your-username>/calculator-app.git
 
@@ -36,7 +39,7 @@ spec:
 
     # The directory inside the repo that holds the Kubernetes manifests
     # TODO: Update this path to match your repository structure
-    # Example: "k8s", "manifests", or "." if manifests are at the root
+    # Example: "k8s", "kubernetes", or "." if manifests are at the root
     path: k8s
 
   # ---------------------------------------------------------------------------
@@ -47,7 +50,7 @@ spec:
     server: https://kubernetes.default.svc
 
     # The Kubernetes namespace where the app will be deployed
-    namespace: calculator-app-ns
+    namespace: second-app-ns
 
   # ---------------------------------------------------------------------------
   # Sync Policy — controls how ArgoCD reconciles Git state with the cluster

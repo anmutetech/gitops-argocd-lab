@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FreshEats — Digital Menu</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #faf7f2; color: #2d3436; }
+    header { background: linear-gradient(135deg, #e17055, #d63031); color: white; padding: 2rem; text-align: center; }
+    header h1 { font-size: 2.2rem; }
+    header p { opacity: 0.9; margin-top: 0.3rem; }
+    .container { max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat { background: white; border-radius: 12px; padding: 1.25rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .stat .number { font-size: 2rem; font-weight: 700; color: #e17055; }
+    .stat .label { color: #636e72; font-size: 0.85rem; margin-top: 0.25rem; }
+    .categories { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .cat-btn { padding: 0.5rem 1rem; border: 2px solid #e17055; border-radius: 20px; cursor: pointer; background: white; color: #e17055; font-weight: 600; font-size: 0.85rem; transition: all 0.2s; }
+    .cat-btn:hover, .cat-btn.active { background: #e17055; color: white; }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+    .menu-item { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: transform 0.2s; }
+    .menu-item:hover { transform: translateY(-2px); }
+    .menu-item h3 { font-size: 1.1rem; margin-bottom: 0.3rem; }
+    .menu-item .category { color: #636e72; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .menu-item .price { font-size: 1.3rem; font-weight: 700; color: #e17055; margin: 0.5rem 0; }
+    .menu-item .details { font-size: 0.85rem; color: #636e72; }
+    .menu-item .allergens { font-size: 0.75rem; color: #d63031; margin-top: 0.5rem; }
+    .unavailable { opacity: 0.5; }
+    .unavailable::after { content: ' (Sold Out)'; color: #d63031; font-weight: 600; }
+    .badge { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.7rem; font-weight: 600; }
+    .badge-available { background: #dfe6e9; color: #2d3436; }
+    footer { text-align: center; padding: 2rem; color: #b2bec3; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>FreshEats</h1>
+    <p>Digital Menu &amp; Ordering System</p>
+  </header>
+  <div class="container">
+    <div class="stats">
+      <div class="stat"><div class="number" id="totalItems">-</div><div class="label">Menu Items</div></div>
+      <div class="stat"><div class="number" id="availableItems">-</div><div class="label">Available Now</div></div>
+      <div class="stat"><div class="number" id="categories">-</div><div class="label">Categories</div></div>
+      <div class="stat"><div class="number" id="hostname">-</div><div class="label">Served By</div></div>
+    </div>
+    <div class="categories" id="catButtons"></div>
+    <div class="menu-grid" id="menuGrid">Loading...</div>
+  </div>
+  <footer>FreshEats v1.0 &mdash; Food &amp; Beverage Ordering Platform</footer>
+  <script>
+    let allItems = [];
+    async function load() {
+      const [menuRes, healthRes] = await Promise.all([fetch('/api/menu'), fetch('/health')]);
+      const menuData = await menuRes.json();
+      const health = await healthRes.json();
+      allItems = menuData.items;
+      const cats = [...new Set(allItems.map(i => i.category))];
+      document.getElementById('totalItems').textContent = allItems.length;
+      document.getElementById('availableItems').textContent = allItems.filter(i => i.available).length;
+      document.getElementById('categories').textContent = cats.length;
+      document.getElementById('hostname').textContent = health.hostname;
+      const btnHtml = '<button class="cat-btn active" onclick="filter(\'all\')">All</button>' +
+        cats.map(c => `<button class="cat-btn" onclick="filter('${c}')">${c}</button>`).join('');
+      document.getElementById('catButtons').innerHTML = btnHtml;
+      render(allItems);
+    }
+    function filter(cat) {
+      document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      render(cat === 'all' ? allItems : allItems.filter(i => i.category === cat));
+    }
+    function render(items) {
+      document.getElementById('menuGrid').innerHTML = items.map(i => `
+        <div class="menu-item ${i.available ? '' : 'unavailable'}">
+          <div class="category">${i.category}</div>
+          <h3>${i.name}</h3>
+          <div class="price">$${i.price.toFixed(2)}</div>
+          <div class="details">${i.calories} cal · ${i.prepTime} min prep</div>
+          ${i.allergens.length ? `<div class="allergens">Allergens: ${i.allergens.join(', ')}</div>` : ''}
+        </div>
+      `).join('');
+    }
+    load();
+  </script>
+</body>
+</html>

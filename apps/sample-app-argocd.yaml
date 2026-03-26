@@ -1,5 +1,5 @@
 # =============================================================================
-# ArgoCD Application — sample-app
+# ArgoCD Application — FreshEats Menu API
 # =============================================================================
 #
 # This custom resource tells ArgoCD to watch a Git repository and
@@ -16,7 +16,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   # The name that appears in the ArgoCD UI
-  name: sample-app
+  name: fresheats-menu
   # ArgoCD Applications must live in the argocd namespace
   namespace: argocd
 spec:
@@ -41,7 +41,7 @@ spec:
     # The Kubernetes API server (in-cluster)
     server: https://kubernetes.default.svc
     # The namespace to deploy into
-    namespace: sample-app-ns
+    namespace: fresheats-ns
 
   # ---------------------------------------------------------------------------
   # Sync Policy — how ArgoCD keeps the cluster in sync with Git

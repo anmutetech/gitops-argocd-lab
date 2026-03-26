@@ -1,54 +1,157 @@
-# GitOps with ArgoCD Lab
+# GitOps with ArgoCD Lab — FreshEats Food & Beverage Platform
 
-Learn GitOps principles by deploying and managing Kubernetes applications using ArgoCD on an AWS EKS cluster.
+A hands-on GitOps lab where students deploy and manage a food and beverage ordering platform using **ArgoCD** on AWS EKS. Instead of manually running `kubectl apply` to deploy changes, students push code to Git and watch ArgoCD automatically sync the cluster to match -- the core principle of GitOps.
 
-By the end of this lab you will understand how GitOps works in practice — using Git as the single source of truth for your infrastructure, with ArgoCD automatically syncing your cluster to match.
+## Scenario
 
----
+You are a DevOps engineer at **FreshEats**, a growing food and beverage company that operates digital ordering kiosks in restaurants, food courts, and cafeterias. The company's menu API powers the kiosks -- customers browse the menu, place orders, and track their order status in real time.
 
-## What is GitOps?
+Until now, the team has been deploying manually: someone SSHes into a server or runs `kubectl apply` from their laptop. This has caused problems:
 
-GitOps is an operational model that uses **Git as the single source of truth** for declarative infrastructure and application configuration. The core principles are:
+- **A developer accidentally deployed a broken version to production** during Friday lunch rush, taking down the ordering system for 20 minutes. Revenue was lost and customers left.
+- **Nobody knows what's running in production.** When the VP of Operations asks "what version is live right now?", the team has to SSH into pods to check.
+- **A junior engineer manually scaled the replicas from 2 to 10** to handle a catering event, but forgot to scale back down. The company got an unexpected AWS bill.
 
-1. **Declarative** — The entire desired state of the system is described declaratively (Kubernetes YAML manifests, Helm charts, Kustomize overlays, etc.).
-2. **Versioned and immutable** — The desired state is stored in Git, giving you a full audit trail of every change.
-3. **Pulled automatically** — An agent (ArgoCD) running inside the cluster continuously pulls the desired state from Git and applies it.
-4. **Self-healing** — If someone makes a manual change to the cluster, the agent detects the drift and reverts it back to the Git-defined state.
+Management has asked you to implement **GitOps** to solve these problems. With GitOps:
 
-ArgoCD is a popular, CNCF-graduated GitOps tool that watches your Git repositories and keeps your Kubernetes clusters in sync.
+- **Git is the single source of truth.** To know what's running in production, just look at the `main` branch.
+- **All changes go through Git.** No more `kubectl apply` from laptops. Every change is reviewed, tracked, and reversible.
+- **ArgoCD automatically syncs the cluster.** Push a change to Git, and ArgoCD deploys it within minutes -- no human intervention needed.
+- **Self-healing.** If someone manually changes something in the cluster, ArgoCD detects the drift and reverts it back to what Git says.
 
----
+## What is GitOps? (Plain English)
+
+Traditional deployment: a person runs commands to push code to a server. If something goes wrong, it's hard to know what changed or who changed it.
+
+**GitOps flips this around.** Instead of *pushing* changes to the cluster, you *describe* the desired state in Git, and a tool (ArgoCD) *pulls* those changes and applies them automatically.
+
+Think of it like a thermostat:
+- You set the desired temperature (the Git repository says "2 replicas, version 1.0, 256Mi memory")
+- The thermostat (ArgoCD) constantly checks the actual temperature (the cluster state)
+- If there's a difference, it adjusts automatically (syncs the cluster to match Git)
+
+**Four principles of GitOps:**
+
+| Principle | What It Means | FreshEats Example |
+|---|---|---|
+| **Declarative** | You describe *what* you want, not *how* to get there | "I want 3 replicas of the menu API" -- not "SSH into the server and start 3 processes" |
+| **Versioned** | Every change is a Git commit with a history | "Version 1.2 was deployed at 2pm by Sarah" -- visible in `git log` |
+| **Pulled automatically** | The system pulls changes from Git, not pushed by humans | ArgoCD checks the repo every 3 minutes and applies any new changes |
+| **Self-healing** | The system corrects any drift between Git and reality | If someone manually deletes a pod, ArgoCD recreates it within minutes |
 
 ## What Gets Created
 
-| Resource | Description |
-|---|---|
-| **ArgoCD** (Helm release in `argocd` namespace) | The GitOps controller — watches Git and syncs your cluster |
-| **ArgoCD Application CR** (`sample-app`) | Tells ArgoCD which repo/path to watch and where to deploy |
-| **Namespace** `sample-app-ns` | Isolated namespace for the sample application |
-| **Deployment** `sample-app` | Nginx deployment with 2 replicas, health probes, and resource limits |
-| **Service** `sample-app` (LoadBalancer) | Exposes the nginx deployment on an AWS load balancer |
+- **ArgoCD** -- Installed on EKS via Helm with a LoadBalancer UI. This is the "thermostat" that watches Git and keeps the cluster in sync.
+- **FreshEats Menu API** -- A Node.js food ordering application with a digital menu, order placement, order status tracking, and a customer-facing dashboard UI.
+- **ArgoCD Application CR** -- A custom resource that tells ArgoCD: "watch this Git repo, and deploy whatever Kubernetes manifests you find in the `sample-app` directory."
+- **Kubernetes Resources** -- Namespace, Deployment (2 replicas), and LoadBalancer Service, all managed by ArgoCD.
 
----
+## Architecture
+
+```
+ ┌─── Developer Workflow ──────────────────────────────────────────────────────────────┐
+ │                                                                                      │
+ │   Developer changes code or K8s manifests                                           │
+ │          │                                                                           │
+ │          ▼                                                                           │
+ │   ┌──────────────┐     ┌──────────────────┐                                        │
+ │   │  git commit   │────▶│  git push to     │                                        │
+ │   │  git push     │     │  main branch     │                                        │
+ │   └──────────────┘     └────────┬─────────┘                                        │
+ │                                  │                                                   │
+ └──────────────────────────────────┼───────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+ ┌─── GitHub Repository ───────────────────────────────────────────────────────────────┐
+ │                                                                                      │
+ │   gitops-argocd-lab/                                                                │
+ │   ├── sample-app/                   ◄── ArgoCD watches this directory               │
+ │   │   ├── namespace.yaml                                                            │
+ │   │   ├── deployment.yaml           (replicas, image version, resources)            │
+ │   │   └── service.yaml                                                              │
+ │   └── apps/                                                                         │
+ │       └── sample-app-argocd.yaml    (ArgoCD Application CR)                         │
+ │                                                                                      │
+ └──────────────────────────────────┬───────────────────────────────────────────────────┘
+                                    │
+                          ArgoCD polls every 3 min
+                                    │
+                                    ▼
+ ┌─── EKS Cluster ─────────────────────────────────────────────────────────────────────┐
+ │                                                                                      │
+ │  ┌─── Namespace: argocd ────────────────────────────────────────────────────────┐    │
+ │  │                                                                              │    │
+ │  │   ┌────────────────────────────────────────────────────────────────────┐     │    │
+ │  │   │  ArgoCD Server                                                     │     │    │
+ │  │   │  ┌──────────────────┐  ┌───────────────────┐  ┌────────────────┐  │     │    │
+ │  │   │  │  UI Dashboard    │  │  Repo Server      │  │  Application   │  │     │    │
+ │  │   │  │  (LoadBalancer)  │  │  (clones Git      │  │  Controller    │  │     │    │
+ │  │   │  │  Shows app       │  │   repos, reads    │  │  (compares     │  │     │    │
+ │  │   │  │  status, sync    │  │   manifests)      │  │   desired vs   │  │     │    │
+ │  │   │  │  history, diff   │  │                   │  │   actual state │  │     │    │
+ │  │   │  └──────────────────┘  └───────────────────┘  │   and syncs)   │  │     │    │
+ │  │   │                                               └────────────────┘  │     │    │
+ │  │   └────────────────────────────────────────────────────────────────────┘     │    │
+ │  │                                                                              │    │
+ │  └──────────────────────────────────────────────────────────────────────────────┘    │
+ │                                                                                      │
+ │  ┌─── Namespace: fresheats-ns (managed by ArgoCD) ─────────────────────────────┐    │
+ │  │                                                                              │    │
+ │  │   ┌──────────────────┐  ┌──────────────────┐                                │    │
+ │  │   │  Pod 1           │  │  Pod 2           │   ◄── 2 replicas              │    │
+ │  │   │  fresheats-menu  │  │  fresheats-menu  │       (change in Git to       │    │
+ │  │   │  :1.0            │  │  :1.0            │        scale up or down)      │    │
+ │  │   │  /health ✓       │  │  /health ✓       │                                │    │
+ │  │   └────────┬─────────┘  └────────┬─────────┘                                │    │
+ │  │            └──────┬──────────────┘                                           │    │
+ │  │                   ▼                                                          │    │
+ │  │   ┌──────────────────────────────┐                                           │    │
+ │  │   │  Service: fresheats-service  │                                           │    │
+ │  │   │  Type: LoadBalancer          │                                           │    │
+ │  │   │  Port: 80 → 3000            │                                           │    │
+ │  │   └──────────────┬───────────────┘                                           │    │
+ │  │                  │                                                           │    │
+ │  └──────────────────┼───────────────────────────────────────────────────────────┘    │
+ │                     │                                                                │
+ └─────────────────────┼────────────────────────────────────────────────────────────────┘
+                       │
+                       ▼
+              ┌──────────────────┐
+              │  Restaurant      │
+              │  Kiosks &        │
+              │  Customers       │
+              └──────────────────┘
+```
 
 ## Prerequisites
 
-Before starting this lab, make sure you have the following:
+### 1. EKS Cluster
 
-- **EKS cluster running** — The `migration-eks-cluster` in `us-east-1` from the [cloud-migration-infra](https://github.com/anmutetech/cloud-migration-infra) lab
-- **kubectl** — Configured and pointing at your EKS cluster (`kubectl get nodes` should return your nodes)
-- **Helm 3** — Installed on your local machine ([install guide](https://helm.sh/docs/intro/install/))
-- **Git** — Installed and configured with your GitHub credentials
-- **GitHub account** — You will fork this repo into your own account
+This project deploys to the `migration-eks-cluster` provisioned by the [Cloud Migration Infrastructure](https://github.com/anmutetech/cloud-migration-infra) setup.
 
----
+Verify your cluster is running:
 
-## Lab Steps
+```bash
+kubectl get nodes
+```
 
-### Step 1: Fork and Clone the Repository
+### 2. Tools
 
-1. Fork this repository to your own GitHub account by clicking the **Fork** button on the GitHub page.
+```bash
+aws --version
+kubectl version --client
+helm version
+```
 
+### 3. DockerHub Account
+
+You need a [DockerHub](https://hub.docker.com/) account to push the FreshEats container image.
+
+## Setup Guide
+
+### Step 1 — Fork and Clone the Repository
+
+1. Fork this repository to your own GitHub account
 2. Clone your fork:
 
 ```bash
@@ -56,290 +159,245 @@ git clone https://github.com/<your-username>/gitops-argocd-lab.git
 cd gitops-argocd-lab
 ```
 
-> Replace `<your-username>` with your GitHub username throughout this lab.
+### Step 2 — Build and Push the FreshEats Image
 
----
+```bash
+cd sample-app/app
+docker build -t <your-dockerhub-username>/fresheats-menu-api:1.0 .
+docker push <your-dockerhub-username>/fresheats-menu-api:1.0
+cd ../..
+```
 
-### Step 2: Install ArgoCD on EKS
+### Step 3 — Update the Manifest References
 
-Run the installation script from the root of the repository:
+Edit `sample-app/deployment.yaml` and replace the image placeholder with your DockerHub username:
+
+```yaml
+image: <your-dockerhub-username>/fresheats-menu-api:1.0
+```
+
+Also edit `apps/sample-app-argocd.yaml` and replace `<your-username>` with your GitHub username:
+
+```yaml
+repoURL: https://github.com/<your-username>/gitops-argocd-lab.git
+```
+
+Commit and push:
+
+```bash
+git add .
+git commit -m "Configure image and ArgoCD repo URL"
+git push origin main
+```
+
+### Step 4 — Install ArgoCD on the Cluster
 
 ```bash
 chmod +x argocd/install.sh
 ./argocd/install.sh
 ```
 
-**What the script does:**
+This script:
+1. Adds the ArgoCD Helm chart repository
+2. Installs ArgoCD into the `argocd` namespace
+3. Waits for the ArgoCD server pod to be ready
+4. Prints the initial admin password
 
-1. Adds the official ArgoCD Helm chart repository
-2. Runs `helm repo update` to fetch the latest chart versions
-3. Installs ArgoCD into the `argocd` namespace using the custom values in `argocd/values.yaml`
-4. Waits for the ArgoCD server pod to become ready
-5. Retrieves and prints the initial admin password
+### Step 5 — Access the ArgoCD Dashboard
 
-The custom `values.yaml` configures two things:
-- **LoadBalancer service** — So you can access the ArgoCD UI from your browser
-- **Insecure mode** — Disables TLS for simplicity in this lab environment
-
-Verify the installation:
-
-```bash
-kubectl get pods -n argocd
-```
-
-You should see several pods running, including `argocd-server`, `argocd-repo-server`, `argocd-application-controller`, and `argocd-redis`.
-
----
-
-### Step 3: Access the ArgoCD UI
-
-1. **Get the ArgoCD LoadBalancer URL:**
+Get the ArgoCD UI URL:
 
 ```bash
 kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
 
-> It may take 2-3 minutes for the load balancer to be provisioned. If the command returns empty, wait and try again.
+Open the URL in your browser (it may take 2-3 minutes for DNS to resolve).
 
-2. **Open the URL** in your browser: `http://<LOAD_BALANCER_HOSTNAME>`
-
-3. **Log in** with:
-   - **Username:** `admin`
-   - **Password:** The password printed by the install script. You can also retrieve it again:
+Log in with:
+- **Username:** `admin`
+- **Password:** (printed by the install script, or retrieve it with the command below)
 
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
 
-You should see the ArgoCD dashboard with no applications deployed yet.
+You should see an empty ArgoCD dashboard -- no applications deployed yet.
 
----
+### Step 6 — Deploy the FreshEats App via ArgoCD
 
-### Step 4: Update the ArgoCD Application CR
-
-Open `apps/sample-app-argocd.yaml` in your editor and replace `<your-username>` with your actual GitHub username:
-
-```yaml
-source:
-  repoURL: https://github.com/<your-username>/gitops-argocd-lab.git
-```
-
-For example, if your GitHub username is `jdoe`:
-
-```yaml
-source:
-  repoURL: https://github.com/jdoe/gitops-argocd-lab.git
-```
-
-Commit and push this change:
-
-```bash
-git add apps/sample-app-argocd.yaml
-git commit -m "Update repoURL with my GitHub username"
-git push origin main
-```
-
----
-
-### Step 5: Deploy the Application via ArgoCD
-
-Apply the ArgoCD Application custom resource to your cluster:
+This is the key GitOps step. Instead of running `kubectl apply` to deploy the app, you tell ArgoCD to manage it:
 
 ```bash
 kubectl apply -f apps/sample-app-argocd.yaml
 ```
 
-This does **not** deploy the sample app directly. Instead, it creates an Application resource in ArgoCD that tells it: "Watch this Git repo, read the manifests in the `sample-app` directory, and deploy them to the `sample-app-ns` namespace."
+Now go back to the ArgoCD dashboard. You should see the **fresheats-menu** application appear. Click on it to see:
 
----
+- The **sync status** (Synced = Git matches the cluster)
+- The **health status** (Healthy = all pods are running)
+- A **visual map** of all Kubernetes resources (namespace, deployment, replicaset, pods, service)
 
-### Step 6: Watch ArgoCD Sync
+### Step 7 — Access the FreshEats Menu
 
-1. Go back to the **ArgoCD UI** in your browser.
-2. You should now see the `sample-app` Application tile.
-3. Click on it to see the detailed sync view.
-4. ArgoCD will automatically:
-   - Clone your repository
-   - Detect the manifests under `sample-app/`
-   - Create the namespace, deployment, and service on your cluster
-   - Report the sync status as **Synced** and health status as **Healthy**
-
-You can also check the sync status from the command line:
+Get the FreshEats service URL:
 
 ```bash
-kubectl get applications -n argocd
+kubectl get svc fresheats-service -n fresheats-ns
 ```
 
----
+Open the `EXTERNAL-IP` in your browser. You should see the FreshEats digital menu with:
+- 10 menu items across 4 categories (Mains, Starters, Beverages, Desserts)
+- Prices, calorie counts, prep times, and allergen information
+- A "Served By" field showing which pod handled the request (refresh to see load balancing)
 
-### Step 7: Verify the Deployment
-
-1. **Check that the pods are running:**
+Test the API:
 
 ```bash
-kubectl get pods -n sample-app-ns
+# Browse the full menu
+curl http://<EXTERNAL-IP>/api/menu
+
+# Filter by category
+curl http://<EXTERNAL-IP>/api/menu?category=Beverages
+
+# Place an order
+curl -X POST http://<EXTERNAL-IP>/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{"customerName": "Table 5", "tableNumber": 5, "items": [{"menuItemId": 1, "quantity": 2}, {"menuItemId": 6, "quantity": 3}]}'
+
+# Check all orders
+curl http://<EXTERNAL-IP>/api/orders
 ```
 
-You should see 2 nginx pods in `Running` state.
+### Step 8 — Make a Change via GitOps (Auto-Sync)
 
-2. **Check the service:**
+This is where GitOps comes alive. The lunch rush is coming and the operations manager wants to scale from 2 to 4 replicas.
 
-```bash
-kubectl get svc -n sample-app-ns
-```
+**The old way:** Someone runs `kubectl scale deployment fresheats-menu --replicas=4 -n fresheats-ns` from their laptop. No record of who did it or why.
 
-3. **Access the application** by getting the LoadBalancer URL:
+**The GitOps way:**
 
-```bash
-kubectl get svc sample-app -n sample-app-ns -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
-```
-
-Open `http://<HOSTNAME>` in your browser. You should see the default nginx welcome page.
-
----
-
-### Step 8: Make a Change and Watch Auto-Sync
-
-This is where GitOps shines. Instead of running `kubectl` commands to update your deployment, you make changes in Git and ArgoCD applies them automatically.
-
-1. **Edit** `sample-app/deployment.yaml` — change `replicas` from `2` to `4`:
-
-```yaml
-spec:
-  replicas: 4
-```
-
-2. **Commit and push:**
+1. Edit `sample-app/deployment.yaml` and change `replicas: 2` to `replicas: 4`
+2. Commit and push:
 
 ```bash
 git add sample-app/deployment.yaml
-git commit -m "Scale sample-app to 4 replicas"
+git commit -m "Scale to 4 replicas for lunch rush"
 git push origin main
 ```
 
-3. **Watch ArgoCD detect the change:**
-   - In the ArgoCD UI, you will see the application briefly go **OutOfSync**
-   - Because auto-sync is enabled, ArgoCD will automatically apply the change
-   - Within a minute or two, the status returns to **Synced**
-
-4. **Verify:**
+3. Watch the ArgoCD dashboard -- within 3 minutes, ArgoCD detects the change and scales the deployment
+4. Verify:
 
 ```bash
-kubectl get pods -n sample-app-ns
+kubectl get pods -n fresheats-ns
 ```
 
-You should now see 4 pods running. You never ran `kubectl apply` or `kubectl scale` — ArgoCD did it for you based on the Git commit.
+You should see 4 pods running. The change is tracked in Git history -- you can see who scaled it, when, and why (the commit message).
 
----
+### Step 9 — Self-Healing Demo
 
-### Step 9: Test Self-Healing
+This demonstrates ArgoCD's self-healing -- if someone manually changes the cluster, ArgoCD reverts it.
 
-Self-healing means ArgoCD will revert any manual changes made directly to the cluster.
-
-1. **Manually delete a pod:**
+**Simulate a mistake:** A junior engineer manually deletes a pod:
 
 ```bash
-kubectl delete pod -n sample-app-ns -l app=sample-app --field-selector=status.phase=Running --wait=false | head -1
+kubectl delete pod -l app=fresheats -n fresheats-ns --wait=false
 ```
 
-Or pick a specific pod:
+Watch the ArgoCD dashboard. Within seconds:
+1. ArgoCD detects the cluster state no longer matches Git (4 replicas defined, but one is missing)
+2. ArgoCD automatically recreates the pod to match the desired state
+3. The dashboard shows the app going from "OutOfSync" → "Syncing" → "Synced"
+
+This is why GitOps matters in a restaurant environment -- the ordering system self-heals, minimizing downtime during service hours.
+
+### Step 10 — Rollback Demo
+
+The development team pushed a bad image version. Let's roll back using Git.
+
+1. Edit `sample-app/deployment.yaml` and change the image tag to a version that doesn't exist:
+
+```yaml
+image: <your-dockerhub-username>/fresheats-menu-api:broken
+```
+
+2. Commit and push. ArgoCD will try to deploy it, but the pods will fail (ImagePullBackOff).
+
+3. Roll back by reverting the commit:
 
 ```bash
-kubectl get pods -n sample-app-ns
-kubectl delete pod <pod-name> -n sample-app-ns
+git revert HEAD
+git push origin main
 ```
 
-2. **Watch what happens:**
-   - Kubernetes itself will recreate the pod (because the Deployment controller maintains the replica count).
-   - If you were to make a more invasive change — like scaling the deployment down with `kubectl scale` — ArgoCD would detect the drift and scale it back up to match Git.
+4. ArgoCD detects the revert and deploys the working version again. Check the ArgoCD UI -- you can see the full sync history showing what happened.
 
-3. **Try a drift test:**
+**This is the power of GitOps:** rolling back is just another Git commit. No panic, no SSH, no `kubectl rollout undo`.
 
-```bash
-kubectl scale deployment sample-app -n sample-app-ns --replicas=1
-```
+## API Endpoints
 
-Watch the ArgoCD UI — it will detect the drift, mark the app as **OutOfSync**, and automatically scale it back to the Git-defined replica count.
-
----
-
-### Step 10: Rollback via the ArgoCD UI
-
-ArgoCD keeps a history of every sync operation. To roll back:
-
-1. Open the **sample-app** in the ArgoCD UI.
-2. Click on **History and Rollback** in the top navigation.
-3. You will see a list of previous sync operations with their Git commit SHAs.
-4. Select a previous revision and click **Rollback**.
-5. ArgoCD will redeploy the manifests from that specific Git commit.
-
-> **Note:** With automated sync enabled, ArgoCD will eventually re-sync to the latest commit in `main`. To keep a rollback permanent, you would revert the commit in Git itself (`git revert`).
-
----
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/` | FreshEats digital menu dashboard |
+| `GET` | `/health` | Health check (used by K8s probes) |
+| `GET` | `/metrics` | Prometheus metrics |
+| `GET` | `/api/menu` | List all menu items (filter: `?category=`, `?available=true`) |
+| `GET` | `/api/menu/:id` | Get a single menu item |
+| `POST` | `/api/orders` | Place an order (`{ customerName, tableNumber, items: [{ menuItemId, quantity }] }`) |
+| `GET` | `/api/orders` | List all orders (filter: `?status=`) |
+| `GET` | `/api/orders/:id` | Get a single order |
+| `PUT` | `/api/orders/:id/status` | Update order status (received → preparing → ready → served) |
 
 ## Cleanup
 
-When you are done with the lab, clean up in this order:
-
-1. **Delete the ArgoCD Application** (this removes the deployed sample-app resources):
+Remove the ArgoCD application (this also deletes the FreshEats resources):
 
 ```bash
-kubectl delete application sample-app -n argocd
+kubectl delete -f apps/sample-app-argocd.yaml
 ```
 
-2. **Verify the sample-app resources are removed:**
-
-```bash
-kubectl get all -n sample-app-ns
-```
-
-3. **Uninstall ArgoCD:**
+Uninstall ArgoCD:
 
 ```bash
 helm uninstall argocd -n argocd
-```
-
-4. **Delete the argocd namespace:**
-
-```bash
 kubectl delete namespace argocd
 ```
 
-5. **Delete the sample-app namespace** (if it still exists):
-
-```bash
-kubectl delete namespace sample-app-ns
-```
-
-> To tear down the EKS cluster itself, follow the cleanup instructions in the [cloud-migration-infra](https://github.com/anmutetech/cloud-migration-infra) repository.
-
----
+> **Note:** To destroy the underlying EKS cluster, follow the cleanup steps in the [Cloud Migration Infrastructure README](https://github.com/anmutetech/cloud-migration-infra).
 
 ## What You Learned
 
-- **GitOps principles** — Using Git as the single source of truth for Kubernetes deployments
-- **ArgoCD installation** — Deploying ArgoCD on EKS using Helm
-- **Application CRs** — Defining ArgoCD Application resources to connect Git repos to cluster namespaces
-- **Automated sync** — ArgoCD detecting Git changes and applying them without manual intervention
-- **Self-healing** — ArgoCD reverting manual cluster modifications to match the Git-defined state
-- **Rollback** — Using ArgoCD's sync history to revert to previous application states
-- **Declarative deployments** — Managing all infrastructure changes through version-controlled manifests
-
----
+| Concept | What It Means |
+|---|---|
+| **GitOps** | Using Git as the single source of truth for infrastructure and application state |
+| **ArgoCD** | A Kubernetes-native tool that continuously syncs cluster state to match a Git repository |
+| **Application CR** | A custom resource that tells ArgoCD which repo to watch and where to deploy |
+| **Auto-sync** | ArgoCD automatically applies changes when it detects new commits in the repo |
+| **Self-healing** | ArgoCD reverts manual cluster changes to match the Git-defined state |
+| **Rollback** | Reverting to a previous version by reverting a Git commit -- no kubectl needed |
+| **Declarative** | Describing the desired state ("I want 4 replicas") rather than running commands |
 
 ## Project Structure
 
 ```
 gitops-argocd-lab/
-├── README.md                          # This file — lab instructions
+├── README.md
 ├── argocd/
-│   ├── install.sh                     # ArgoCD installation script (Helm)
-│   └── values.yaml                    # Custom Helm values for ArgoCD
+│   ├── install.sh               # ArgoCD installation script (Helm)
+│   └── values.yaml              # Custom Helm values (LoadBalancer, insecure mode)
 ├── apps/
-│   ├── sample-app-argocd.yaml         # ArgoCD Application CR for sample-app
-│   └── calculator-app-argocd.yaml     # ArgoCD Application CR template for calculator-app
+│   ├── sample-app-argocd.yaml   # ArgoCD Application CR for FreshEats
+│   └── calculator-app-argocd.yaml # Template for deploying a second app via ArgoCD
 └── sample-app/
-    ├── namespace.yaml                 # Namespace: sample-app-ns
-    ├── deployment.yaml                # Nginx deployment (2 replicas)
-    └── service.yaml                   # LoadBalancer service (port 80)
+    ├── namespace.yaml            # fresheats-ns namespace
+    ├── deployment.yaml           # FreshEats deployment (2 replicas, health probes)
+    ├── service.yaml              # LoadBalancer service (port 80 → 3000)
+    └── app/
+        ├── Dockerfile            # Multi-stage Node.js build, non-root user
+        ├── package.json          # Dependencies (express, helmet, prom-client)
+        ├── server.js             # FreshEats Menu API (menu, orders, health, metrics)
+        ├── public/
+        │   └── index.html        # Digital menu dashboard UI
+        └── __tests__/
+            └── menu.test.js      # Jest test suite (menu, orders, health)
 ```

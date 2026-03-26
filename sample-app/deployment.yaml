@@ -1,48 +1,45 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sample-app
-  namespace: sample-app-ns
+  name: fresheats-menu
+  namespace: fresheats-ns
   labels:
-    app: sample-app
+    app: fresheats
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: sample-app
+      app: fresheats
   template:
     metadata:
       labels:
-        app: sample-app
+        app: fresheats
     spec:
       containers:
-        - name: nginx
-          image: nginx:1.25-alpine
+        - name: fresheats-menu
+          image: <your-dockerhub-username>/fresheats-menu-api:1.0
           ports:
-            - containerPort: 80
+            - containerPort: 3000
               protocol: TCP
+          env:
+            - name: APP_VERSION
+              value: "1.0.0"
           resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 200m
+              cpu: 100m
               memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
           readinessProbe:
             httpGet:
-              path: /
-              port: 80
+              path: /health
+              port: 3000
             initialDelaySeconds: 5
             periodSeconds: 10
-            timeoutSeconds: 3
-            successThreshold: 1
-            failureThreshold: 3
           livenessProbe:
             httpGet:
-              path: /
-              port: 80
+              path: /health
+              port: 3000
             initialDelaySeconds: 10
             periodSeconds: 15
-            timeoutSeconds: 3
-            successThreshold: 1
-            failureThreshold: 3

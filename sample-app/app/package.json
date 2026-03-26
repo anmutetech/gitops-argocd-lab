@@ -1,0 +1,20 @@
+{
+  "name": "fresheats-menu-api",
+  "version": "1.0.0",
+  "description": "FreshEats — Digital menu and ordering API for food and beverage operations",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "jest --forceExit"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "prom-client": "^15.1.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
+  }
+}
