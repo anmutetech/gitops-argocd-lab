@@ -282,21 +282,21 @@ Test the API:
 ```bash
 # Browse the full menu
 curl http://<EXTERNAL-IP>/api/menu
+![image](image-13.png)
 
 # Filter by category
 curl http://<EXTERNAL-IP>/api/menu?category=Beverages
+![image](image-14.png)
 
 # Place an order
 curl -X POST http://<EXTERNAL-IP>/api/orders \
   -H "Content-Type: application/json" \
   -d '{"customerName": "Table 5", "tableNumber": 5, "items": [{"menuItemId": 1, "quantity": 2}, {"menuItemId": 6, "quantity": 3}]}'
+  ![image](image-15.png)
 
 # Check all orders
 curl http://<EXTERNAL-IP>/api/orders
 ```
-![image](image-13.png)
-![image](image-14.png)
-![image](image-15.png)
 ![image](image-16.png)
 
 ### Step 8 — Make a Change via GitOps (Auto-Sync)
