@@ -261,7 +261,7 @@ Now go back to the ArgoCD dashboard. You should see the **fresheats-menu** appli
 - The **health status** (Healthy = all pods are running)
 - A **visual map** of all Kubernetes resources (namespace, deployment, replicaset, pods, service)
 ![image](image-9.png)
-![image](image-10.png)
+![image](image-11.png)
 
 ### Step 7 — Access the FreshEats Menu
 
@@ -275,24 +275,29 @@ Open the `EXTERNAL-IP` in your browser. You should see the FreshEats digital men
 - 10 menu items across 4 categories (Mains, Starters, Beverages, Desserts)
 - Prices, calorie counts, prep times, and allergen information
 - A "Served By" field showing which pod handled the request (refresh to see load balancing)
+![image](image-12.png)
 
 Test the API:
 
 ```bash
 # Browse the full menu
 curl http://<EXTERNAL-IP>/api/menu
+![image](image-13.png)
 
 # Filter by category
 curl http://<EXTERNAL-IP>/api/menu?category=Beverages
+![image](image-14.png)
 
 # Place an order
 curl -X POST http://<EXTERNAL-IP>/api/orders \
   -H "Content-Type: application/json" \
   -d '{"customerName": "Table 5", "tableNumber": 5, "items": [{"menuItemId": 1, "quantity": 2}, {"menuItemId": 6, "quantity": 3}]}'
+  ![image](image-15.png)
 
 # Check all orders
 curl http://<EXTERNAL-IP>/api/orders
 ```
+![image](image-16.png)
 
 ### Step 8 — Make a Change via GitOps (Auto-Sync)
 
@@ -303,6 +308,8 @@ This is where GitOps comes alive. The lunch rush is coming and the operations ma
 **The GitOps way:**
 
 1. Edit `sample-app/deployment.yaml` and change `replicas: 2` to `replicas: 4`
+![image](image-17.png)
+
 2. Commit and push:
 
 ```bash
