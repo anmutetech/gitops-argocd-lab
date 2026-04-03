@@ -124,6 +124,7 @@ Think of it like a thermostat:
 ```
 
 ## Prerequisites
+...
 Setting up your environment
     Spin up an EC2 instance with the following specifications
 •	Instance name: Argo-CD-Lab
@@ -135,6 +136,7 @@ Setting up your environment
 •	Click the link below to copy user data
 https://github.com/anmutetech/awstraining/blob/dockerlab/setup/k8s-lab/k8s-prerequisites
 •	Connect to the instance via VScode
+...
 
 ### 1. EKS Cluster
 
