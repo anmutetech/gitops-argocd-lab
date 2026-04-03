@@ -124,6 +124,17 @@ Think of it like a thermostat:
 ```
 
 ## Prerequisites
+Setting up your environment
+    Spin up an EC2 instance with the following specifications
+•	Instance name: Argo-CD-Lab
+•	AMI: Ubuntu
+•	Instance type t2 medium
+•	Create or use an existing keypair
+•	Use an existing VPC and subnet (default)
+•	Storage: 20GB
+•	Click the link below to copy user data
+https://github.com/anmutetech/awstraining/blob/dockerlab/setup/k8s-lab/k8s-prerequisites
+•	Connect to the instance via VScode
 
 ### 1. EKS Cluster
 
@@ -134,6 +145,7 @@ Verify your cluster is running:
 ```bash
 kubectl get nodes
 ```
+![image](image.png)
 
 ### 2. Tools
 
@@ -142,6 +154,7 @@ aws --version
 kubectl version --client
 helm version
 ```
+![image](image-1.png)
 
 ### 3. DockerHub Account
 
@@ -163,7 +176,10 @@ cd gitops-argocd-lab
 
 ```bash
 cd sample-app/app
+![image](image-2.png)
 docker build -t <your-dockerhub-username>/fresheats-menu-api:1.0 .
+Login to docker <docker login -u username>
+![image](image-3.png)
 docker push <your-dockerhub-username>/fresheats-menu-api:1.0
 cd ../..
 ```
@@ -175,12 +191,14 @@ Edit `sample-app/deployment.yaml` and replace the image placeholder with your Do
 ```yaml
 image: <your-dockerhub-username>/fresheats-menu-api:1.0
 ```
+![image](image-4.png)
 
 Also edit `apps/sample-app-argocd.yaml` and replace `<your-username>` with your GitHub username:
 
 ```yaml
 repoURL: https://github.com/<your-username>/gitops-argocd-lab.git
 ```
+![image](image-5.png)
 
 Commit and push:
 

@@ -28,7 +28,7 @@ spec:
   # ---------------------------------------------------------------------------
   source:
     # IMPORTANT: Replace <your-username> with your GitHub username
-    repoURL: https://github.com/<your-username>/gitops-argocd-lab.git
+    repoURL: https://github.com/anmutetech/gitops-argocd-lab.git
     # The branch to track
     targetRevision: main
     # The directory inside the repo that contains the Kubernetes manifests
