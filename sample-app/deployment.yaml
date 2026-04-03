@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: fresheats-menu
-          image: lincontech/fresheats-menu-api:broken
+          image: lincontech/fresheats-menu-api:1.0
           ports:
             - containerPort: 3000
               protocol: TCP
