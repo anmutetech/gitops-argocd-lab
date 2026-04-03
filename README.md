@@ -222,6 +222,7 @@ This script:
 2. Installs ArgoCD into the `argocd` namespace
 3. Waits for the ArgoCD server pod to be ready
 4. Prints the initial admin password
+![image](image-6.png)
 
 ### Step 5 — Access the ArgoCD Dashboard
 
@@ -230,6 +231,7 @@ Get the ArgoCD UI URL:
 ```bash
 kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
+![image](image-7.png)
 
 Open the URL in your browser (it may take 2-3 minutes for DNS to resolve).
 
@@ -242,6 +244,8 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 ```
 
 You should see an empty ArgoCD dashboard -- no applications deployed yet.
+
+![image](image-8.png)
 
 ### Step 6 — Deploy the FreshEats App via ArgoCD
 
@@ -256,6 +260,8 @@ Now go back to the ArgoCD dashboard. You should see the **fresheats-menu** appli
 - The **sync status** (Synced = Git matches the cluster)
 - The **health status** (Healthy = all pods are running)
 - A **visual map** of all Kubernetes resources (namespace, deployment, replicaset, pods, service)
+![image](image-9.png)
+![image](image-10.png)
 
 ### Step 7 — Access the FreshEats Menu
 
