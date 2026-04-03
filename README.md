@@ -326,6 +326,7 @@ kubectl get pods -n fresheats-ns
 ```
 
 You should see 4 pods running. The change is tracked in Git history -- you can see who scaled it, when, and why (the commit message).
+![image](image-19.png)
 
 ### Step 9 — Self-Healing Demo
 
@@ -343,6 +344,7 @@ Watch the ArgoCD dashboard. Within seconds:
 3. The dashboard shows the app going from "OutOfSync" → "Syncing" → "Synced"
 
 This is why GitOps matters in a restaurant environment -- the ordering system self-heals, minimizing downtime during service hours.
+![image](image-20.png)
 
 ### Step 10 — Rollback Demo
 
