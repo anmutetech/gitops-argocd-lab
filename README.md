@@ -357,11 +357,12 @@ image: <your-dockerhub-username>/fresheats-menu-api:broken
 ```
 
 2. Commit and push. ArgoCD will try to deploy it, but the pods will fail (ImagePullBackOff).
+![image](image-21.png)
 
 3. Roll back by reverting the commit:
 
 ```bash
-git revert HEAD
+git revert HEAD 
 git push origin main
 ```
 
