@@ -207,10 +207,12 @@ cd gitops-argocd-lab
 
 ### Step 2 — Build and Push the FreshEats Image
 
+> **Note:** EKS nodes run on `linux/amd64`. If you're building on a different architecture (e.g., Apple Silicon Mac or Windows ARM), add the `--platform linux/amd64` flag to the `docker build` command to ensure compatibility.
+
 ```bash
 cd sample-app/app
 ![image](images/image-2.png)
-docker build -t <your-dockerhub-username>/fresheats-menu-api:1.0 .
+docker build --platform linux/amd64 -t <your-dockerhub-username>/fresheats-menu-api:1.0 .
 Login to docker <docker login -u username>
 ![image](images/image-3.png)
 docker push <your-dockerhub-username>/fresheats-menu-api:1.0
