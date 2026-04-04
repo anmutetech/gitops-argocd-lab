@@ -124,39 +124,70 @@ Think of it like a thermostat:
 ```
 
 ## Prerequisites
-```
-Setting up your environment
-    Spin up an EC2 instance with the following specifications
-•	Instance name: Argo-CD-Lab
-•	AMI: Ubuntu
-•	Instance type t2 medium
-•	Create or use an existing keypair
-•	Use an existing VPC and subnet (default)
-•	Storage: 20GB
-•	Click the link below to copy user data
-https://github.com/anmutetech/awstraining/blob/dockerlab/setup/k8s-lab/k8s-prerequisites
-•	Connect to the instance via VScode
-```
 
 ### 1. EKS Cluster
 
 This project deploys to the `migration-eks-cluster` provisioned by the [Cloud Migration Infrastructure](https://github.com/anmutetech/cloud-migration-infra) setup.
+
+Connect to the EKS cluster:
+
+```bash
+aws eks update-kubeconfig --name migration-eks-cluster --region <your-aws-region>
+```
 
 Verify your cluster is running:
 
 ```bash
 kubectl get nodes
 ```
-![image](image.png)
+![image](images/image.png)
 
 ### 2. Tools
+
+#### kubectl
+
+**macOS:**
+```bash
+brew install kubectl
+```
+
+**Linux:**
+```bash
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+```
+
+**Windows (PowerShell):**
+```powershell
+winget install Kubernetes.kubectl
+```
+
+#### Helm
+
+**macOS:**
+```bash
+brew install helm
+```
+
+**Linux:**
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+winget install Helm.Helm
+```
+
+#### Verify installations
 
 ```bash
 aws --version
 kubectl version --client
 helm version
 ```
-![image](image-1.png)
+![image](images/image-1.png)
 
 ### 3. DockerHub Account
 
@@ -178,10 +209,10 @@ cd gitops-argocd-lab
 
 ```bash
 cd sample-app/app
-![image](image-2.png)
+![image](images/image-2.png)
 docker build -t <your-dockerhub-username>/fresheats-menu-api:1.0 .
 Login to docker <docker login -u username>
-![image](image-3.png)
+![image](images/image-3.png)
 docker push <your-dockerhub-username>/fresheats-menu-api:1.0
 cd ../..
 ```
@@ -193,14 +224,14 @@ Edit `sample-app/deployment.yaml` and replace the image placeholder with your Do
 ```yaml
 image: <your-dockerhub-username>/fresheats-menu-api:1.0
 ```
-![image](image-4.png)
+![image](images/image-4.png)
 
 Also edit `apps/sample-app-argocd.yaml` and replace `<your-username>` with your GitHub username:
 
 ```yaml
 repoURL: https://github.com/<your-username>/gitops-argocd-lab.git
 ```
-![image](image-5.png)
+![image](images/image-5.png)
 
 Commit and push:
 
@@ -222,7 +253,7 @@ This script:
 2. Installs ArgoCD into the `argocd` namespace
 3. Waits for the ArgoCD server pod to be ready
 4. Prints the initial admin password
-![image](image-6.png)
+![image](images/image-6.png)
 
 ### Step 5 — Access the ArgoCD Dashboard
 
@@ -231,7 +262,7 @@ Get the ArgoCD UI URL:
 ```bash
 kubectl get svc argocd-server -n argocd -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
-![image](image-7.png)
+![image](images/image-7.png)
 
 Open the URL in your browser (it may take 2-3 minutes for DNS to resolve).
 
@@ -245,7 +276,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 
 You should see an empty ArgoCD dashboard -- no applications deployed yet.
 
-![image](image-8.png)
+![image](images/image-8.png)
 
 ### Step 6 — Deploy the FreshEats App via ArgoCD
 
@@ -260,8 +291,8 @@ Now go back to the ArgoCD dashboard. You should see the **fresheats-menu** appli
 - The **sync status** (Synced = Git matches the cluster)
 - The **health status** (Healthy = all pods are running)
 - A **visual map** of all Kubernetes resources (namespace, deployment, replicaset, pods, service)
-![image](image-9.png)
-![image](image-11.png)
+![image](images/image-9.png)
+![image](images/image-11.png)
 
 ### Step 7 — Access the FreshEats Menu
 
@@ -275,29 +306,29 @@ Open the `EXTERNAL-IP` in your browser. You should see the FreshEats digital men
 - 10 menu items across 4 categories (Mains, Starters, Beverages, Desserts)
 - Prices, calorie counts, prep times, and allergen information
 - A "Served By" field showing which pod handled the request (refresh to see load balancing)
-![image](image-12.png)
+![image](images/image-12.png)
 
 Test the API:
 
 ```bash
 # Browse the full menu
 curl http://<EXTERNAL-IP>/api/menu
-![image](image-13.png)
+![image](images/image-13.png)
 
 # Filter by category
 curl http://<EXTERNAL-IP>/api/menu?category=Beverages
-![image](image-14.png)
+![image](images/image-14.png)
 
 # Place an order
 curl -X POST http://<EXTERNAL-IP>/api/orders \
   -H "Content-Type: application/json" \
   -d '{"customerName": "Table 5", "tableNumber": 5, "items": [{"menuItemId": 1, "quantity": 2}, {"menuItemId": 6, "quantity": 3}]}'
-  ![image](image-15.png)
+  ![image](images/image-15.png)
 
 # Check all orders
 curl http://<EXTERNAL-IP>/api/orders
 ```
-![image](image-16.png)
+![image](images/image-16.png)
 
 ### Step 8 — Make a Change via GitOps (Auto-Sync)
 
@@ -308,7 +339,7 @@ This is where GitOps comes alive. The lunch rush is coming and the operations ma
 **The GitOps way:**
 
 1. Edit `sample-app/deployment.yaml` and change `replicas: 2` to `replicas: 4`
-![image](image-17.png)
+![image](images/image-17.png)
 
 2. Commit and push:
 
@@ -326,7 +357,7 @@ kubectl get pods -n fresheats-ns
 ```
 
 You should see 4 pods running. The change is tracked in Git history -- you can see who scaled it, when, and why (the commit message).
-![image](image-19.png)
+![image](images/image-19.png)
 
 ### Step 9 — Self-Healing Demo
 
@@ -344,7 +375,7 @@ Watch the ArgoCD dashboard. Within seconds:
 3. The dashboard shows the app going from "OutOfSync" → "Syncing" → "Synced"
 
 This is why GitOps matters in a restaurant environment -- the ordering system self-heals, minimizing downtime during service hours.
-![image](image-20.png)
+![image](images/image-20.png)
 
 ### Step 10 — Rollback Demo
 
@@ -357,7 +388,7 @@ image: <your-dockerhub-username>/fresheats-menu-api:broken
 ```
 
 2. Commit and push. ArgoCD will try to deploy it, but the pods will fail (ImagePullBackOff).
-![image](image-21.png)
+![image](images/image-21.png)
 
 3. Roll back by reverting the commit:
 
