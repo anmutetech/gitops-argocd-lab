@@ -211,10 +211,21 @@ cd gitops-argocd-lab
 
 ```bash
 cd sample-app/app
+```
 ![image](images/image-2.png)
+
+```bash
 docker build --platform linux/amd64 -t <your-dockerhub-username>/fresheats-menu-api:1.0 .
-Login to docker <docker login -u username>
+```
+
+Log in to Docker:
+
+```bash
+docker login -u <your-dockerhub-username>
+```
 ![image](images/image-3.png)
+
+```bash
 docker push <your-dockerhub-username>/fresheats-menu-api:1.0
 cd ../..
 ```
@@ -315,18 +326,24 @@ Test the API:
 ```bash
 # Browse the full menu
 curl http://<EXTERNAL-IP>/api/menu
+```
 ![image](images/image-13.png)
 
+```bash
 # Filter by category
 curl http://<EXTERNAL-IP>/api/menu?category=Beverages
+```
 ![image](images/image-14.png)
 
+```bash
 # Place an order
 curl -X POST http://<EXTERNAL-IP>/api/orders \
   -H "Content-Type: application/json" \
   -d '{"customerName": "Table 5", "tableNumber": 5, "items": [{"menuItemId": 1, "quantity": 2}, {"menuItemId": 6, "quantity": 3}]}'
-  ![image](images/image-15.png)
+```
+![image](images/image-15.png)
 
+```bash
 # Check all orders
 curl http://<EXTERNAL-IP>/api/orders
 ```
